@@ -4,3 +4,4 @@ secrets/*
 __pycache__
 .hypothesis
 .mypy_cache
+dist
