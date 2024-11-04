@@ -1,7 +1,7 @@
 data:
   allowedHosts:
     hosts:
-      - TODO # Please change to the hostname of the source.
+      - "*.datadoghq.com"
   registries:
     oss:
       enabled: true
@@ -25,7 +25,7 @@ data:
   icon: datadog-usage.svg
   license: MIT
   name: Datadog Usage
-  releaseDate: TODO
+  releaseDate: "2024-11-04"
   supportLevel: community
   releaseStage: alpha
   documentationUrl: https://docs.airbyte.com/integrations/sources/datadog-usage

@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "The timestamp of the usage data"
+    },
+    "product_family": {
+      "type": "string",
+      "description": "The Datadog product family"
+    },
+    "org_name": {
+      "type": "string",
+      "description": "The name of the organization"
+    },
+    "measurements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "usage_type": {
+            "type": "string",
+            "description": "The type of usage metric"
+          },
+          "value": {
+            "type": "integer",
+            "description": "The value of the usage metric"
+          }
+        }
+      },
+      "description": "Array of usage measurements"
+    },
+    "type": {
+      "type": "string",
+      "description": "The type of the usage data"
+    }
+  }
+}

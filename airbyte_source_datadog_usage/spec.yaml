@@ -75,3 +75,8 @@ connectionSpecification:
           - timeseries
           - vuln_management
           - workflow_executions
+    start_date:
+      type: string
+      description: "UTC date in the format YYYY-MM-DDThh to start syncing data from"
+      pattern: "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}$"
+      examples: ["2024-01-01T00"]

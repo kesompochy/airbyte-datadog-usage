@@ -3,8 +3,10 @@
 #
 
 
+import json
 from abc import ABC, abstractmethod
-from typing import Any, Iterable, List, Mapping, MutableMapping, Optional, Tuple
+from pathlib import Path
+from typing import Any, Dict, Iterable, List, Mapping, MutableMapping, Optional, Tuple
 
 import requests
 from airbyte_cdk.sources import AbstractSource
@@ -81,16 +83,22 @@ class IncrementalDatadogUsageStream(DatadogUsageStream, ABC):
 
 
 class HourlyUsageByProductStream(IncrementalDatadogUsageStream):
-    primary_key = "timestamp"
+    primary_key = ["timestamp", "product_family"]
 
     def __init__(
-        self, api_key: str, application_key: str, site: str, product_families: List[str]
+        self,
+        api_key: str,
+        application_key: str,
+        site: str,
+        product_families: List[str],
+        start_date: str,
     ):
         super().__init__()
         self.api_key = api_key
         self.application_key = application_key
         self.site = site
         self.product_families = product_families
+        self.start_date = start_date
         self._url_base = f"https://api.{site}"
 
     @property
@@ -113,8 +121,12 @@ class HourlyUsageByProductStream(IncrementalDatadogUsageStream):
             "filter[product_families]": ",".join(self.product_families),
             "page[limit]": 500,
         }
-        if stream_state.get(self.cursor_field):
-            params["filter[timestamp][start]"] = stream_state[self.cursor_field]
+
+        start_time = stream_state.get(self.cursor_field)
+        if start_time:
+            params["filter[timestamp][start]"] = start_time[:13]
+        else:
+            params["filter[timestamp][start]"] = self.start_date
 
         if next_page_token:
             params.update(next_page_token)
@@ -125,18 +137,47 @@ class HourlyUsageByProductStream(IncrementalDatadogUsageStream):
         self, response: requests.Response, **kwargs
     ) -> Iterable[Mapping]:
         data = response.json()
-        for record in data.get("usage", []):
+        for record in data.get("data", []):
+            attributes = record["attributes"]
             yield {
-                "timestamp": record["attributes"]["timestamp"],
-                "org_name": record["attributes"]["org_name"],
-                "product_family": record["attributes"]["product_family"],
+                "timestamp": attributes["timestamp"],
+                "product_family": attributes["product_family"],
+                "org_name": attributes["org_name"],
+                "measurements": [
+                    {"usage_type": m["usage_type"], "value": m["value"]}
+                    for m in attributes["measurements"]
+                    if m["value"] is not None  # nullの値は除外
+                ],
+                "type": record["type"],
             }
+
+    def get_json_schema(self) -> Dict[str, Any]:
+        schema_path = (
+            Path(__file__).parent / "schemas" / "hourly_usage_by_products.json"
+        )
+        return json.loads(schema_path.read_text())
 
 
 # Source
 class SourceDatadogUsage(AbstractSource):
     def check_connection(self, logger, config) -> Tuple[bool, any]:
-        return True, None
+        try:
+            url = f"https://api.{config['site']}/api/v1/validate"
+
+            headers = {
+                "DD-API-KEY": config["api_key"],
+                "DD-APPLICATION-KEY": config["application_key"],
+            }
+
+            response = requests.get(url, headers=headers)
+
+            if response.status_code == 200:
+                return True, None
+
+            return False, f"HTTP {response.status_code}: {response.text}"
+
+        except Exception as e:
+            return False, str(e)
 
     def streams(self, config: Mapping[str, Any]) -> List[Stream]:
         return [
@@ -145,5 +186,6 @@ class SourceDatadogUsage(AbstractSource):
                 application_key=config["application_key"],
                 site=config["site"],
                 product_families=config["product_families"],
+                start_date=config["start_date"],
             )
         ]

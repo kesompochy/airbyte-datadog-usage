@@ -58,12 +58,13 @@ def test_hourly_usage_stream_properties():
         "application_key": "test_app_key",
         "site": "datadoghq.com",
         "product_families": ["all"],
+        "start_date": "2024-01-01T00",
     }
     stream = HourlyUsageByProductStream(**config)
 
     assert stream.url_base == "https://api.datadoghq.com"
     assert stream.path == "/api/v2/usage/hourly_usage"
-    assert stream.primary_key == "timestamp"
+    assert stream.primary_key == ["timestamp", "product_family"]
 
     assert stream.cursor_field == "timestamp"
     assert stream.supports_incremental
@@ -82,13 +83,21 @@ def test_hourly_usage_stream_request_params():
         "application_key": "test_app_key",
         "site": "datadoghq.com",
         "product_families": ["all"],
+        "start_date": "2024-01-01T00",
     }
     stream = HourlyUsageByProductStream(**config)
+
+    # Initial sync
     params = stream.request_params(
         stream_state={}, stream_slice=None, next_page_token=None
     )
-    assert params == {"filter[product_families]": "all", "page[limit]": 500}
+    assert params == {
+        "filter[product_families]": "all",
+        "page[limit]": 500,
+        "filter[timestamp][start]": "2024-01-01T00",  # from config
+    }
 
+    # Incremental sync
     params = stream.request_params(
         stream_state={"timestamp": "2024-03-19T00:00:00Z"},
         stream_slice=None,
@@ -97,7 +106,7 @@ def test_hourly_usage_stream_request_params():
     assert params == {
         "filter[product_families]": "all",
         "page[limit]": 500,
-        "filter[timestamp][start]": "2024-03-19T00:00:00Z",
+        "filter[timestamp][start]": "2024-03-19T00",  # ISO-8601 format
     }
 
 
@@ -107,27 +116,41 @@ def test_hourly_usage_stream_parse_response(mocker):
         "application_key": "test_app_key",
         "site": "datadoghq.com",
         "product_families": ["all"],
+        "start_date": "2024-01-01T00",
     }
     stream = HourlyUsageByProductStream(**config)
 
     response = mocker.Mock()
-    response.json.return_value = {
-        "usage": [
+    response.json.return_value = {  # https://docs.datadoghq.com/api/latest/usage-metering/#get-hourly-usage-by-product-family
+        "data": [
             {
                 "attributes": {
-                    "timestamp": "2024-03-20T00:00:00Z",
+                    "account_name": "test_account",
+                    "account_public_id": "abc123",
+                    "measurements": [
+                        {"usage_type": "host_count", "value": 100},
+                        {"usage_type": "container_count", "value": None},
+                    ],
                     "org_name": "test_org",
-                    "product_family": "logs",
-                }
+                    "product_family": "infra_hosts",
+                    "public_id": "def456",
+                    "region": "us1",
+                    "timestamp": "2019-09-19T10:00:00.000Z",
+                },
+                "id": "6564d4299b5ac14acd51b709",
+                "type": "usage_timeseries",
             }
-        ]
+        ],
+        "meta": {"pagination": {"next_record_id": "next_page_token"}},
     }
 
     records = list(stream.parse_response(response))
     assert records == [
         {
-            "timestamp": "2024-03-20T00:00:00Z",
+            "timestamp": "2019-09-19T10:00:00.000Z",
+            "product_family": "infra_hosts",
             "org_name": "test_org",
-            "product_family": "logs",
+            "measurements": [{"usage_type": "host_count", "value": 100}],
+            "type": "usage_timeseries",
         }
     ]
