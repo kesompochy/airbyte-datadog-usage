@@ -183,7 +183,7 @@ class SourceDatadogUsage(AbstractSource):
                 api_key=config["api_key"],
                 application_key=config["application_key"],
                 site=config["site"],
-                product_families=config["product_families"],
-                start_date=config["start_date"],
+                product_families=config["hourly_usage_by_product"]["product_families"],
+                start_date=config["hourly_usage_by_product"]["start_date"],
             )
         ]
