@@ -14,7 +14,6 @@ def test_check_connection(mocker):
         "api_key": "test_api_key",
         "application_key": "test_app_key",
         "site": "datadoghq.com",
-        "start_date": "2024-01-01T00",
     }
 
     requests_mock = mocker.patch("requests.get")
@@ -38,8 +37,10 @@ def test_streams(mocker):
         "api_key": "test_api_key",
         "application_key": "test_application_key",
         "site": "datadoghq.com",
-        "product_families": ["all"],
-        "start_date": "2024-01-01T00",
+        "hourly_usage_by_product": {
+            "product_families": ["all"],
+            "start_date": "2024-01-01T00",
+        },
     }
     streams = source.streams(config)
     expected_streams_number = 1

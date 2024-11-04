@@ -3,7 +3,7 @@ requires = [ "poetry-core>=1.0.0",]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
-version = "0.1.2"
+version = "0.2.0"
 name = "airbyte-source-datadog-usage"
 description = "Source implementation for datadog-usage."
 authors = [ "kesompochy",]
@@ -23,4 +23,6 @@ airbyte-source-datadog-usage = "airbyte_source_datadog_usage.run:run"
 requests-mock = "*"
 pytest-mock = "*"
 pytest = "*"
+black = "^24.10.0"
+isort = "^5.13.2"
 
