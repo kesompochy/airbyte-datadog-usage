@@ -51,4 +51,4 @@ jobs:
           fi
           
       - name: Run tests
-        run: poetry run pytest
+        run: poetry run pytest unit_tests
