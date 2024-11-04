@@ -1,0 +1,13 @@
+Copy.git
+.gitignore
+.history
+.hypothesis
+.mypy_cache
+.pytest_cache
+.venv
+integration_tests
+unit_tests
+secrets
+__pycache__
+*.pyc
+.DS_Store

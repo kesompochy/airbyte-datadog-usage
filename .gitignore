@@ -2,3 +2,4 @@
 .pytest_cache
 secrets/*
 __pycache__
+.hypothesis
