@@ -10,7 +10,7 @@ on:
       - "metadata.yaml"
       - "pyproject.toml"
       - "poetry.lock"
-      - ".github/ci.yaml"
+      - ".github/workflow/ci.yaml"
 
 jobs:
   test:
