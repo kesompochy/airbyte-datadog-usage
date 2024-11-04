@@ -1,0 +1,56 @@
+{
+  "streams": [
+    {
+      "stream": {
+        "name": "hourly_usage_by_product_stream",
+        "json_schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "timestamp": {
+              "type": "string",
+              "format": "date-time",
+              "description": "The timestamp of the usage data"
+            },
+            "product_family": {
+              "type": "string",
+              "description": "The Datadog product family"
+            },
+            "org_name": {
+              "type": "string",
+              "description": "The name of the organization"
+            },
+            "measurements": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "usage_type": {
+                    "type": "string",
+                    "description": "The type of usage metric"
+                  },
+                  "value": {
+                    "type": "integer",
+                    "description": "The value of the usage metric"
+                  }
+                }
+              },
+              "description": "Array of usage measurements"
+            },
+            "type": {
+              "type": "string",
+              "description": "The type of the usage data"
+            }
+          }
+        },
+        "supported_sync_modes": ["full_refresh", "incremental"],
+        "source_defined_cursor": true,
+        "default_cursor_field": ["timestamp"],
+        "source_defined_primary_key": [["timestamp"], ["product_family"]]
+      },
+      "sync_mode": "incremental",
+      "cursor_field": ["timestamp"],
+      "destination_sync_mode": "append"
+    }
+  ]
+}
