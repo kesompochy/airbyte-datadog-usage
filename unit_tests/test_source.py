@@ -14,7 +14,6 @@ def test_check_connection(mocker):
         "api_key": "test_api_key",
         "application_key": "test_app_key",
         "site": "datadoghq.com",
-        "start_date": "2024-01-01T00",
     }
 
     requests_mock = mocker.patch("requests.get")
