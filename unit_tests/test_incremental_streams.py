@@ -63,7 +63,7 @@ def test_hourly_usage_stream_properties():
     stream = HourlyUsageByProductStream(**config)
 
     assert stream.url_base == "https://api.datadoghq.com"
-    assert stream.path == "/api/v2/usage/hourly_usage"
+    assert stream.path() == "/api/v2/usage/hourly_usage"
     assert stream.primary_key == ["timestamp", "product_family"]
 
     assert stream.cursor_field == "timestamp"

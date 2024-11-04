@@ -22,9 +22,8 @@ class DatadogUsageStream(HttpStream, ABC):
     def url_base(self) -> str:
         return self._url_base
 
-    @property
     @abstractmethod
-    def path(self) -> str:
+    def path(self, **kwargs) -> str:
         pass
 
     def next_page_token(
@@ -101,8 +100,7 @@ class HourlyUsageByProductStream(IncrementalDatadogUsageStream):
         self.start_date = start_date
         self._url_base = f"https://api.{site}"
 
-    @property
-    def path(self) -> str:
+    def path(self, **kwargs) -> str:
         return "/api/v2/usage/hourly_usage"
 
     def request_headers(self, **kwargs) -> Mapping[str, Any]:
