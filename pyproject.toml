@@ -1,0 +1,26 @@
+[build-system]
+requires = [ "poetry-core>=1.0.0",]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+version = "0.1.0"
+name = "airbyte-source-datadog-usage"
+description = "Source implementation for datadog-usage."
+authors = [ "kesompochy",]
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/kesompochy/airbyte-source-datadog-usage"
+packages = [ { include = "airbyte_source_datadog_usage" }, {include = "main.py" } ]
+
+[tool.poetry.dependencies]
+python = "^3.9,<3.12"
+airbyte-cdk = "^0"
+
+[tool.poetry.scripts]
+airbyte-source-datadog-usage = "airbyte_source_datadog_usage.run:run"
+
+[tool.poetry.group.dev.dependencies]
+requests-mock = "*"
+pytest-mock = "*"
+pytest = "*"
+
