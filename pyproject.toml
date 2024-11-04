@@ -23,4 +23,6 @@ airbyte-source-datadog-usage = "airbyte_source_datadog_usage.run:run"
 requests-mock = "*"
 pytest-mock = "*"
 pytest = "*"
+black = "^24.10.0"
+isort = "^5.13.2"
 
