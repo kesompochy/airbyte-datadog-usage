@@ -15,8 +15,12 @@ def test_check_connection(mocker):
 
 def test_streams(mocker):
     source = SourceDatadogUsage()
-    config_mock = MagicMock()
-    streams = source.streams(config_mock)
-    # TODO: replace this with your streams number
-    expected_streams_number = 2
+    config = {
+        "api_key": "test_api_key",
+        "application_key": "test_application_key",
+        "site": "datadoghq.com",
+        "product_families": ["all"],
+    }
+    streams = source.streams(config)
+    expected_streams_number = 1
     assert len(streams) == expected_streams_number

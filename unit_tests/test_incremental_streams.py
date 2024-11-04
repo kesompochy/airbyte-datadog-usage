@@ -1,17 +1,14 @@
-#
-# Copyright (c) 2024 Airbyte, Inc., all rights reserved.
-#
-
-
 from airbyte_cdk.models import SyncMode
 from pytest import fixture
 
-from airbyte_source_datadog_usage.source import IncrementalDatadogUsageStream
+from airbyte_source_datadog_usage.source import (
+    HourlyUsageByProductStream,
+    IncrementalDatadogUsageStream,
+)
 
 
 @fixture
 def patch_incremental_base_class(mocker):
-    # Mock abstract methods to enable instantiating abstract class
     mocker.patch.object(IncrementalDatadogUsageStream, "path", "v0/example_endpoint")
     mocker.patch.object(
         IncrementalDatadogUsageStream, "primary_key", "test_primary_key"
@@ -21,31 +18,26 @@ def patch_incremental_base_class(mocker):
 
 def test_cursor_field(patch_incremental_base_class):
     stream = IncrementalDatadogUsageStream()
-    # TODO: replace this with your expected cursor field
-    expected_cursor_field = []
-    assert stream.cursor_field == expected_cursor_field
+    assert stream.cursor_field == "timestamp"
 
 
 def test_get_updated_state(patch_incremental_base_class):
     stream = IncrementalDatadogUsageStream()
-    # TODO: replace this with your input parameters
-    inputs = {"current_stream_state": None, "latest_record": None}
-    # TODO: replace this with your expected updated stream state
-    expected_state = {}
-    assert stream.get_updated_state(**inputs) == expected_state
+
+    inputs = {
+        "current_stream_state": {},
+        "latest_record": {"timestamp": "2024-03-20T00:00:00Z"},
+    }
+    assert stream.get_updated_state(**inputs) == {"timestamp": "2024-03-20T00:00:00Z"}
+
+    inputs = {
+        "current_stream_state": {"timestamp": "2024-03-19T00:00:00Z"},
+        "latest_record": {"timestamp": "2024-03-20T00:00:00Z"},
+    }
+    assert stream.get_updated_state(**inputs) == {"timestamp": "2024-03-20T00:00:00Z"}
 
 
-def test_stream_slices(patch_incremental_base_class):
-    stream = IncrementalDatadogUsageStream()
-    # TODO: replace this with your input parameters
-    inputs = {"sync_mode": SyncMode.incremental, "cursor_field": [], "stream_state": {}}
-    # TODO: replace this with your expected stream slices list
-    expected_stream_slice = [{}]
-    assert stream.stream_slices(**inputs) == expected_stream_slice
-
-
-def test_supports_incremental(patch_incremental_base_class, mocker):
-    mocker.patch.object(IncrementalDatadogUsageStream, "cursor_field", "dummy_field")
+def test_supports_incremental(patch_incremental_base_class):
     stream = IncrementalDatadogUsageStream()
     assert stream.supports_incremental
 
@@ -57,6 +49,85 @@ def test_source_defined_cursor(patch_incremental_base_class):
 
 def test_stream_checkpoint_interval(patch_incremental_base_class):
     stream = IncrementalDatadogUsageStream()
-    # TODO: replace this with your expected checkpoint interval
-    expected_checkpoint_interval = None
-    assert stream.state_checkpoint_interval == expected_checkpoint_interval
+    assert stream.state_checkpoint_interval == 500
+
+
+def test_hourly_usage_stream_properties():
+    config = {
+        "api_key": "test_api_key",
+        "application_key": "test_app_key",
+        "site": "datadoghq.com",
+        "product_families": ["all"],
+    }
+    stream = HourlyUsageByProductStream(**config)
+
+    assert stream.url_base == "https://api.datadoghq.com"
+    assert stream.path == "/api/v2/usage/hourly_usage"
+    assert stream.primary_key == "timestamp"
+
+    assert stream.cursor_field == "timestamp"
+    assert stream.supports_incremental
+    assert stream.source_defined_cursor
+
+    expected_headers = {
+        "DD-API-KEY": config["api_key"],
+        "DD-APPLICATION-KEY": config["application_key"],
+    }
+    assert stream.request_headers() == expected_headers
+
+
+def test_hourly_usage_stream_request_params():
+    config = {
+        "api_key": "test_api_key",
+        "application_key": "test_app_key",
+        "site": "datadoghq.com",
+        "product_families": ["all"],
+    }
+    stream = HourlyUsageByProductStream(**config)
+    params = stream.request_params(
+        stream_state={}, stream_slice=None, next_page_token=None
+    )
+    assert params == {"filter[product_families]": "all", "page[limit]": 500}
+
+    params = stream.request_params(
+        stream_state={"timestamp": "2024-03-19T00:00:00Z"},
+        stream_slice=None,
+        next_page_token=None,
+    )
+    assert params == {
+        "filter[product_families]": "all",
+        "page[limit]": 500,
+        "filter[timestamp][start]": "2024-03-19T00:00:00Z",
+    }
+
+
+def test_hourly_usage_stream_parse_response(mocker):
+    config = {
+        "api_key": "test_api_key",
+        "application_key": "test_app_key",
+        "site": "datadoghq.com",
+        "product_families": ["all"],
+    }
+    stream = HourlyUsageByProductStream(**config)
+
+    response = mocker.Mock()
+    response.json.return_value = {
+        "usage": [
+            {
+                "attributes": {
+                    "timestamp": "2024-03-20T00:00:00Z",
+                    "org_name": "test_org",
+                    "product_family": "logs",
+                }
+            }
+        ]
+    }
+
+    records = list(stream.parse_response(response))
+    assert records == [
+        {
+            "timestamp": "2024-03-20T00:00:00Z",
+            "org_name": "test_org",
+            "product_family": "logs",
+        }
+    ]

@@ -7,7 +7,10 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from airbyte_source_datadog_usage.source import DatadogUsageStream
+from airbyte_source_datadog_usage.source import (
+    DatadogUsageStream,
+    HourlyUsageByProductStream,
+)
 
 
 @pytest.fixture
@@ -29,11 +32,11 @@ def test_request_params(patch_base_class):
 
 def test_next_page_token(patch_base_class):
     stream = DatadogUsageStream()
-    # TODO: replace this with your input parameters
-    inputs = {"response": MagicMock()}
-    # TODO: replace this with your expected next page token
-    expected_token = None
-    assert stream.next_page_token(**inputs) == expected_token
+    response = MagicMock()
+    response.json.return_value = {"meta": {"pagination": {"next_record_id": "abc123"}}}
+    assert stream.next_page_token(response) == {"next_record_id": "abc123"}
+    response.json.return_value = {"meta": {"pagination": {"next_record_id": None}}}
+    assert stream.next_page_token(response) is None
 
 
 def test_parse_response(patch_base_class):
