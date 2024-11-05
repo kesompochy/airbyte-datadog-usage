@@ -1,7 +1,10 @@
+from datetime import datetime
+
 from airbyte_cdk.models import SyncMode
 from pytest import fixture
 
 from airbyte_source_datadog_usage.source import (
+    EstimatedCostStream,
     HourlyUsageByProductStream,
     IncrementalDatadogUsageStream,
 )
@@ -152,5 +155,102 @@ def test_hourly_usage_stream_parse_response(mocker):
             "org_name": "test_org",
             "measurements": [{"usage_type": "host_count", "value": 100}],
             "type": "usage_timeseries",
+        }
+    ]
+
+
+def test_estimated_cost(mocker):
+    config = {
+        "api_key": "test_api_key",
+        "application_key": "test_app_key",
+        "site": "datadoghq.com",
+    }
+    stream = EstimatedCostStream(**config)
+
+    assert stream.url_base == "https://api.datadoghq.com"
+    assert stream.path() == "/api/v2/usage/estimated_cost"
+    assert stream.primary_key == ["sync_date", "month"]
+
+    assert stream.cursor_field == "sync_date"
+    assert stream.supports_incremental
+    assert stream.source_defined_cursor
+
+    expected_headers = {
+        "DD-API-KEY": config["api_key"],
+        "DD-APPLICATION-KEY": config["application_key"],
+    }
+
+    assert stream.request_headers() == expected_headers
+
+    mock_now = mocker.patch("airbyte_source_datadog_usage.source.datetime")
+    mock_now.now.return_value = datetime(2024, 10, 15)
+    params = stream.request_params({})
+    assert params == {"start_month": "2024-10"}
+
+    response = mocker.Mock()
+    response.json.return_value = {  # https://docs.datadoghq.com/ja/api/latest/usage-metering/#get-estimated-cost-across-your-account
+        "data": [
+            {
+                "type": "cost_by_org",
+                "id": "333c20c962c7f38662f9093df1e51aaf40ad17f42cec70cd022e6bebb23ec1c0",
+                "attributes": {
+                    "account_name": "test_account",
+                    "account_public_id": "hoge",
+                    "org_name": "my_org",
+                    "public_id": "bbhogefuga",
+                    "region": "us",
+                    "total_cost": 2500,
+                    "date": "2024-10-01T00:00:00Z",
+                    "charges": [
+                        {
+                            "product_name": "apm_fargate",
+                            "charge_type": "committed",
+                            "cost": 2500,
+                            "last_aggregation_function": "average",
+                        },
+                        {
+                            "product_name": "apm_fargate",
+                            "charge_type": "on_demand",
+                            "cost": 100,
+                            "last_aggregation_function": "average",
+                        },
+                        {
+                            "product_name": "siem",
+                            "charge_type": "total",
+                            "cost": 0,
+                            "last_aggregation_function": "sum",
+                        },
+                    ],
+                },
+            }
+        ]
+    }
+    records = list(stream.parse_response(response))
+    assert records == [
+        {
+            "sync_date": "2024-10-15",
+            "month": "2024-10",
+            "org_name": "my_org",
+            "total_cost": 2500,
+            "charges": [
+                {
+                    "product_name": "apm_fargate",
+                    "charge_type": "committed",
+                    "cost": 2500,
+                    "last_aggregation_function": "average",
+                },
+                {
+                    "product_name": "apm_fargate",
+                    "charge_type": "on_demand",
+                    "cost": 100,
+                    "last_aggregation_function": "average",
+                },
+                {
+                    "product_name": "siem",
+                    "charge_type": "total",
+                    "cost": 0,
+                    "last_aggregation_function": "sum",
+                },
+            ],
         }
     ]
