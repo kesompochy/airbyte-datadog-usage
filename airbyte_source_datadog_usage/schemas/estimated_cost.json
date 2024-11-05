@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "sync_date": {
+      "type": "string",
+      "format": "date",
+      "description": "The date of the sync"
+    },
+    "month": {
+      "type": "string",
+      "description": "The month of the estimated cost"
+    },
+    "org_name": {
+      "type": "string",
+      "description": "The name of the organization"
+    },
+    "total_cost": {
+      "type": "number",
+      "description": "The total cost of the organization"
+    },
+    "charges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "product_name": {
+            "type": "string",
+            "description": "The name of the product"
+          },
+          "charge_type": {
+            "type": "string",
+            "description": "The type of the charge"
+          },
+          "cost": {
+            "type": "number",
+            "description": "The cost of the charge"
+          },
+          "last_aggregation_function": {
+            "type": "string",
+            "description": "The last aggregation function of the charge"
+          }
+        }
+      }
+    }
+  }
+}

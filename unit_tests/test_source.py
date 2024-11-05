@@ -43,5 +43,5 @@ def test_streams(mocker):
         },
     }
     streams = source.streams(config)
-    expected_streams_number = 1
+    expected_streams_number = 2
     assert len(streams) == expected_streams_number

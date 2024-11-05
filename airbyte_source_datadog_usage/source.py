@@ -5,6 +5,7 @@
 
 import json
 from abc import ABC, abstractmethod
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Mapping, MutableMapping, Optional, Tuple
 
@@ -156,6 +157,75 @@ class HourlyUsageByProductStream(IncrementalDatadogUsageStream):
         return json.loads(schema_path.read_text())
 
 
+class EstimatedCostStream(IncrementalDatadogUsageStream):
+    primary_key = ["sync_date", "month"]
+
+    def __init__(
+        self,
+        api_key: str,
+        application_key: str,
+        site: str,
+        start_month: Optional[str] = None,
+    ):
+        super().__init__()
+        self.api_key = api_key
+        self.application_key = application_key
+        self.site = site
+        self._url_base = f"https://api.{site}"
+        self.start_month = start_month or datetime.now().strftime("%Y-%m")
+
+    def path(self, **kwargs) -> str:
+        return "/api/v2/usage/estimated_cost"
+
+    def request_headers(self, **kwargs) -> Mapping[str, Any]:
+        return {
+            "DD-API-KEY": self.api_key,
+            "DD-APPLICATION-KEY": self.application_key,
+        }
+
+    def request_params(
+        self,
+        stream_state: Mapping[str, Any],
+        stream_slice: Mapping[str, any] = None,
+        next_page_token: Mapping[str, Any] = None,
+    ) -> MutableMapping[str, Any]:
+        current_month = datetime.now().strftime("%Y-%m")
+        params = {"start_month": current_month}
+
+        return params
+
+    def parse_response(
+        self, response: requests.Response, **kwargs
+    ) -> Iterable[Mapping]:
+        data = response.json()
+        for record in data.get("data", []):
+            attributes = record["attributes"]
+            month = attributes["date"][:7]
+            yield {
+                "sync_date": datetime.now().strftime("%Y-%m-%d"),
+                "month": month,
+                "org_name": attributes["org_name"],
+                "total_cost": attributes["total_cost"],
+                "charges": [
+                    {
+                        "product_name": c["product_name"],
+                        "charge_type": c["charge_type"],
+                        "cost": c["cost"],
+                        "last_aggregation_function": c["last_aggregation_function"],
+                    }
+                    for c in attributes["charges"]
+                ],
+            }
+
+    @property
+    def cursor_field(self) -> str:
+        return "sync_date"
+
+    def get_json_schema(self) -> Dict[str, Any]:
+        schema_path = Path(__file__).parent / "schemas" / "estimated_cost.json"
+        return json.loads(schema_path.read_text())
+
+
 # Source
 class SourceDatadogUsage(AbstractSource):
     def check_connection(self, logger, config) -> Tuple[bool, any]:
@@ -185,5 +255,10 @@ class SourceDatadogUsage(AbstractSource):
                 site=config["site"],
                 product_families=config["hourly_usage_by_product"]["product_families"],
                 start_date=config["hourly_usage_by_product"]["start_date"],
-            )
+            ),
+            EstimatedCostStream(
+                api_key=config["api_key"],
+                application_key=config["application_key"],
+                site=config["site"],
+            ),
         ]
