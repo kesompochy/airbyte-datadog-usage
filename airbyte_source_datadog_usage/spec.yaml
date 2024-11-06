@@ -30,7 +30,8 @@ connectionSpecification:
       type: object
       properties:
         product_families:
-          description: The product families to include in the sync. Required if you use `
+          type: array
+          description: The product families to include in the sync. Required if you use `hourly_usage_by_product`.
           items:
             type: string
             enum:
@@ -79,6 +80,6 @@ connectionSpecification:
               - workflow_executions
         start_date:
           type: string
-          description: "UTC date in the format YYYY-MM-DDThh to start syncing data from"
+          description: "UTC date in the format YYYY-MM-DDThh to start syncing data from. Required if you use `hourly_usage_by_product`."
           pattern: "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}$"
           examples: ["2024-01-01T00"]
