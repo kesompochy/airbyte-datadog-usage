@@ -85,7 +85,7 @@ def test_hourly_usage_stream_request_params():
         "api_key": "test_api_key",
         "application_key": "test_app_key",
         "site": "datadoghq.com",
-        "product_families": ["all"],
+        "product_families": ["infra_hosts"],
         "start_date": "2024-01-01T00",
     }
     stream = HourlyUsageByProductStream(**config)
@@ -95,7 +95,7 @@ def test_hourly_usage_stream_request_params():
         stream_state={}, stream_slice=None, next_page_token=None
     )
     assert params == {
-        "filter[product_families]": "all",
+        "filter[product_families]": "infra_hosts",
         "page[limit]": 500,
         "filter[timestamp][start]": "2024-01-01T00",  # from config
     }
@@ -107,7 +107,7 @@ def test_hourly_usage_stream_request_params():
         next_page_token=None,
     )
     assert params == {
-        "filter[product_families]": "all",
+        "filter[product_families]": "infra_hosts",
         "page[limit]": 500,
         "filter[timestamp][start]": "2024-03-19T00",  # ISO-8601 format
     }
