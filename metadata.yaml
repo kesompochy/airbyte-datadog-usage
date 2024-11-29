@@ -28,7 +28,6 @@ data:
   releaseDate: "2024-11-04"
   supportLevel: community
   releaseStage: alpha
-  documentationUrl: https://docs.airbyte.com/integrations/sources/datadog-usage
   tags:
     - language:python
 metadataSpecVersion: "1.0"
