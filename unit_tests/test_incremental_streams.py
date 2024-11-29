@@ -254,3 +254,26 @@ def test_estimated_cost(mocker):
             ],
         }
     ]
+
+
+def test_hourly_usage_stream_rate_limit(mocker):
+    config = {
+        "api_key": "test_api_key",
+        "application_key": "test_app_key",
+        "site": "datadoghq.com",
+        "product_families": ["all"],
+        "start_date": "2024-01-01T00",
+    }
+    stream = HourlyUsageByProductStream(**config)
+
+    sleep_mock = mocker.patch("time.sleep")
+
+    # next_record_idを使う場合は待機する
+    params = stream.request_params(
+        stream_state={},
+        stream_slice=None,
+        next_page_token={"next_record_id": "some_token"},
+    )
+
+    # 5秒待機したことを確認
+    sleep_mock.assert_called_once_with(5.0)
