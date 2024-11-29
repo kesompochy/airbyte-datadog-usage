@@ -2,7 +2,7 @@
 
 ## Usage
 
-In your airbyte workspace, create a new source from a docker image.
+In your airbyte workspace, create a new source from a container image.
 
 ## Supported Features
 

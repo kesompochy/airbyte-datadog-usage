@@ -4,6 +4,7 @@
 
 
 import json
+import time
 from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
@@ -128,6 +129,7 @@ class HourlyUsageByProductStream(IncrementalDatadogUsageStream):
             params["filter[timestamp][start]"] = self.start_date
 
         if next_page_token:
+            time.sleep(5.0)
             params.update(next_page_token)
 
         return params
