@@ -112,6 +112,18 @@ def test_hourly_usage_stream_request_params():
         "filter[timestamp][start]": "2024-03-19T00",  # ISO-8601 format
     }
 
+    params = stream.request_params(
+        stream_state={},
+        stream_slice=None,
+        next_page_token={"next_record_id": "some_token"},
+    )
+    assert params == {
+        "filter[product_families]": "infra_hosts",
+        "page[limit]": 500,
+        "filter[timestamp][start]": "2024-01-01T00",
+        "page[next_record_id]": "some_token",
+    }
+
 
 def test_hourly_usage_stream_parse_response(mocker):
     config = {
@@ -268,12 +280,10 @@ def test_hourly_usage_stream_rate_limit(mocker):
 
     sleep_mock = mocker.patch("time.sleep")
 
-    # next_record_idを使う場合は待機する
+    # sleep 5 seconds when using next_record_id
     params = stream.request_params(
         stream_state={},
         stream_slice=None,
-        next_page_token={"next_record_id": "some_token"},
+        next_page_token={"page[next_record_id]": "some_token"},
     )
-
-    # 5秒待機したことを確認
     sleep_mock.assert_called_once_with(5.0)

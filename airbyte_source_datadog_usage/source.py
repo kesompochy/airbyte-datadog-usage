@@ -14,7 +14,6 @@ import requests
 from airbyte_cdk.sources import AbstractSource
 from airbyte_cdk.sources.streams import Stream
 from airbyte_cdk.sources.streams.http import HttpStream
-from airbyte_cdk.sources.streams.http.requests_native_auth import TokenAuthenticator
 
 
 # Basic full refresh stream
@@ -130,7 +129,8 @@ class HourlyUsageByProductStream(IncrementalDatadogUsageStream):
 
         if next_page_token:
             time.sleep(5.0)
-            params.update(next_page_token)
+            if "next_record_id" in next_page_token:
+                params["page[next_record_id]"] = next_page_token["next_record_id"]
 
         return params
 
